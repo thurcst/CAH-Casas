@@ -4,10 +4,7 @@ from random import choice
 
 import logging
 
-LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(threadName)s - %(message)s"
-logging.basicConfig(format=LOG_FORMAT)
-logger = logging.getLogger(__name__)
-logger.setLevel("INFO")
+from sanic.log import logger
 
 
 class Deck:

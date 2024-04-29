@@ -15,7 +15,7 @@ class Pergunta:
             "texto": self.texto,
             "picks": self.picks,
             "autor": self.autor,
-            "id": self.id,
+            "id": str(self.id),
         }
 
         return json.dumps(obj)

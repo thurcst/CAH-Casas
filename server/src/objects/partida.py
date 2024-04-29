@@ -5,10 +5,7 @@ from objects.mesa import Mesa
 import logging
 import uuid
 
-LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(threadName)s - %(message)s"
-logging.basicConfig(format=LOG_FORMAT)
-logger = logging.getLogger(__name__)
-logger.setLevel("INFO")
+from sanic.log import logger
 
 
 class Partida:
@@ -49,13 +46,14 @@ class Partida:
         try:
             if id == str(self.dono.id):
                 self.started = True
-                self.gerar_primeira_pergunta()
 
                 for jogador in self.jogadores:
                     jogador.cartas.extend(self.deck.pick_respostas())
 
                     for carta in jogador.cartas:
-                        carta.jogador = jogador.nome
+                        carta.jogador = str(jogador.id)
+
+                payload = self.iniciar_rodada()
 
                 return "OK"
             else:
@@ -64,17 +62,58 @@ class Partida:
         except Exception as e:
             logger.exception(e)
 
+    def iniciar_rodada(self, id: str = None):
+        if id == None:
+            pergunta = self.gerar_primeira_pergunta()
+            payload = pergunta.to_json()
+
+        else:
+            perguntas = self.deck.pick_perguntas(3)
+            payload = [pergunta.to_json() for pergunta in perguntas]
+
+        return payload
+
     def gerar_primeira_pergunta(self) -> None:
         pergunta_inicial = self.deck.pick_perguntas(1)
         self.mesa.pergunta_da_rodada = pergunta_inicial[0]
+
+        return pergunta_inicial[0]
 
     def gerar_perguntas(self):
         perguntas = self.deck.pick_perguntas()
         return perguntas
 
+    def iniciar_vocatacao(self):
+        raise NotImplementedError
+
+    def finalizar_votacao(self):
+
+        ranking = self.mesa.finalizar_rodada()
+        vencedor = ranking[0].jogador
+
+        for jogador in self.jogadores:
+            if str(jogador.id) == vencedor:
+                jogador.pontuacao += 1
+                logger.info(
+                    "O jogador de id '%s' foi o vencedor da rodada e agora possui %s pontos.",
+                    vencedor,
+                    jogador.pontuacao,
+                )
+
+    def contabilizar_voto(self, id_resposta):
+        try:
+            self.mesa.computar_voto(id_resposta)
+        except Exception as e:
+            logger.info(e)
+
+        if self.mesa.votos == len(self.jogadores):
+            self.finalizar_votacao()
+
     def selecionar_pergunta(self, payload: dict):
 
         jogador = self.get_jogador(payload["jogador"])
+
+        print(f"jogador: {jogador.nome}")
 
         if len(payload["resposta"]) > int(self.mesa.pergunta_da_rodada.picks):
             logger.info(
@@ -82,24 +121,25 @@ class Partida:
             )
             raise Exception("Mais respostas do que deveria.")
 
-        respostas_da_rodada = [
+        ja_jogaram = [
             str(resposta.jogador) for resposta in self.mesa.respostas_da_rodada
         ]
 
-        if jogador.nome in respostas_da_rodada:
+        if jogador.nome in ja_jogaram:
             raise Exception("Jogador já fez sua seleção.")
 
-        logger.info("Jogadores que já responderam a rodada: %s", respostas_da_rodada)
+        else:
+            # logger.info("Jogadores que já responderam a rodada: %s", ja_jogaram)
 
-        for resposta in payload["resposta"]:
-            resposta = self.get_resposta(resposta)
+            for resposta in payload["resposta"]:
+                resposta = self.get_resposta(resposta)
 
-            try:
-                self.mesa.adicionar_resposta(resposta)
-                jogador.descartar_resposta(resposta)
-            except Exception as e:
-                logger.exception(e)
-                raise Exception(e)
+                try:
+                    self.mesa.adicionar_resposta(resposta)
+                    jogador.descartar_resposta(resposta)
+                except Exception as e:
+                    logger.exception(e)
+                    raise Exception(e)
 
     def entrar_na_sala(self, novo_jogador: Jogador) -> uuid.UUID:
         try:

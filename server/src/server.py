@@ -1,40 +1,71 @@
-from sanic import Sanic
+from sanic import Sanic, Websocket, Request, HTTPResponse
+from sanic.log import logger
+
+import json
+
 from objects.jogador import Jogador
 from objects.partida import Partida
 
-import logging
+app = Sanic(
+    __name__,
+)
 
-LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(threadName)s - %(message)s"
-logging.basicConfig(format=LOG_FORMAT)
-logger = logging.getLogger(__name__)
-logger.setLevel("INFO")
+JOIN_LIST = {}
+
+"""
+Formato das requisições
+
+{
+    contexto: 'entrou_na_sala',
+    jogador: 'nome do usuario',
+    payload: any
+}
+"""
 
 
-def main():
-    dummy = Jogador("isaac")
-    dummy_2 = Jogador("vitu")
+async def handler(msg: dict, ws: Websocket):
+    logger.debug(msg)
+    identifier = ws.__hash__()
 
-    game = Partida(dummy, 10, 30, 15)
-    game.entrar_na_sala(dummy_2)
+    if msg["contexto"] == "iniciar_conexao":
+        jogador = Jogador()
 
-    game.iniciar_jogo(str(dummy.id))
+        JOIN_LIST[identifier] = jogador, ws
+        response = json.dumps(jogador.to_json())
+        await ws.send(response)
 
-    game.debug_jogadores()
+    if msg["contexto"] == "reconetar":
+        raise NotImplementedError
 
-    for jogador in game.jogadores:
-        print("Jogador: {}\nID: {}".format(jogador.nome.capitalize(), jogador.id))
+    elif msg["contexto"] == "criar_jogador":
+        jogador, _ = JOIN_LIST[identifier]
+        jogador.nome = msg["payload"]["nome"]
 
-        for carta in jogador.cartas:
-            print(carta.id)
+        response = {"contexto": "nome_atualizado"}
 
-    # Simulação de carta jogada
+        await ws.send(json.dumps(response))
 
-    payload = {"jogador": str(dummy.id), "resposta": [str(dummy.cartas[0].id)]}
 
-    game.selecionar_pergunta(payload=payload)
+@app.websocket("/game")
+async def game(request: Request, ws: Websocket):
 
-    print(game.mesa.debug())
+    logger.debug(request.__str__())
+
+    async for msg in ws:
+
+        data = json.loads(msg)
+
+        logger.debug(data)
+        logger.debug(ws.__hash__())
+
+        await handler(data, ws)
+
+
+@app.get("/ping")
+async def ping(request: Request):
+    return HTTPResponse("pong", 200)
 
 
 if __name__ == "__main__":
-    main()
+    app.run("127.0.0.1", 3000, auto_reload=True, verbosity=0, access_log=False)
+    # app.run()
