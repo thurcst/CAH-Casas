@@ -1,11 +1,12 @@
 from objects.jogador import Jogador
 from objects.deck import Deck
 from objects.mesa import Mesa
-
-import logging
-import uuid
-
 from sanic.log import logger
+
+from objects.resposta import Resposta
+
+import json
+import uuid
 
 
 class Partida:
@@ -42,25 +43,25 @@ class Partida:
         debug_text = f"""ID: {self.id}\nStarted: {self.started}\nTemporizador de seleção: {self.temporizador_selecao}\nTemporizador de votação: {self.temporizador_votacao}\nPontuação máxima: {self.max_pontuacao}\nMáximo de rodadas: {self.max_rodadas}\nJogadores: {len(self.jogadores)}\nDono da sala: {str(self.dono)}\n"""
         return debug_text
 
-    def iniciar_jogo(self, id: str) -> str:
+    def iniciar_jogo(self) -> list[Resposta]:
         try:
-            if id == str(self.dono.id):
-                self.started = True
+            self.started = True
 
-                for jogador in self.jogadores:
-                    jogador.cartas.extend(self.deck.pick_respostas())
+            payload = self.iniciar_rodada()
 
-                    for carta in jogador.cartas:
-                        carta.jogador = str(jogador.id)
-
-                payload = self.iniciar_rodada()
-
-                return "OK"
-            else:
-                return "NOT STARTED"
+            return payload
 
         except Exception as e:
             logger.exception(e)
+
+    def distribuir_cartas(self):
+        for jogador in self.jogadores:
+            jogador.cartas.extend(self.deck.pick_respostas())
+
+            for carta in jogador.cartas:
+                carta.jogador = str(jogador.id)
+
+        return
 
     def iniciar_rodada(self, id: str = None):
         if id == None:
@@ -153,7 +154,8 @@ class Partida:
                 novo_jogador.nome,
                 novo_jogador.id,
             )
-            return self.id
+
+            return self.to_json()
         except Exception as e:
             logger.exception(e)
 
@@ -173,6 +175,20 @@ class Partida:
 
         if len(jogador) > 0:
             return jogador[0]
+
+    def to_json(self):
+        metadata = {
+            "id": str(self.id),
+            "dono": self.dono.nome,
+            "jogadores": [jogador.nome for jogador in self.jogadores],
+            "max_rodadas": self.max_rodadas,
+            "max_pontuacao": self.max_pontuacao,
+            "temporizador_selecao": self.temporizador_selecao,
+            "temporizador_votacao": self.temporizador_votacao,
+            "iniciado": self.started,
+        }
+
+        return json.dumps(metadata)
 
     def debug_jogadores(self) -> None:
         for jogador in self.jogadores:

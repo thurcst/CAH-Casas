@@ -1,19 +1,20 @@
-import uuid
-
-import logging
-
 from objects.resposta import Resposta
-
 from sanic.log import logger
+
+from sanic import Websocket
+
+import uuid
 
 
 class Jogador:
-    def __init__(self, nome: str = None) -> None:
+    def __init__(self, websocket: Websocket, nome: str = None) -> None:
         self.nome = nome
         self.cartas = []
         self.pontuacao = 0
         self.status = "aguardando"  # possíveis status = aguardando, escolhendo, votando
-        self.id = uuid.uuid4()
+        self.id = websocket.__hash__()
+        self.websocket = websocket
+        self.id_partida = None
 
         logger.info("Jogador %s foi criado com o id %s.", self.nome, self.id)
 
@@ -39,7 +40,7 @@ class Jogador:
             "contexto": "informacoes_do_usuario",
             "jogador": self.nome,
             "payload": {
-                "id": str(self.id),
+                "id": self.id,
             },
         }
 

@@ -1,7 +1,5 @@
 from objects.resposta import Resposta
 from objects.deck import Deck
-
-import logging
 from sanic.log import logger
 
 
