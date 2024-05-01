@@ -1,5 +1,5 @@
-from sanic import Sanic, Websocket, Request, HTTPResponse
 from websockets.exceptions import ConnectionClosed
+from sanic import Sanic, Websocket, Request
 from sanic.signals import Event
 from sanic.log import logger
 
@@ -33,6 +33,22 @@ async def error(error_msg: str, ws: Websocket):
     await ws.send(json.dumps(metadata))
 
 
+def get_jogador(id_jogador):
+    try:
+        jogador = ONLINE_PLAYERS[id_jogador]
+        return jogador
+    except KeyError as e:
+        logger.info("O jogador procurado não existe: %s", e)
+
+
+def get_partida(id_sala):
+    try:
+        partida = PARTIDAS[id_sala]
+        return partida
+    except KeyError as e:
+        logger.error("Partida não existe. %s", e)
+
+
 @app.signal("jogador.conexao.iniciar")
 async def iniciar_conexao(**context):
 
@@ -52,29 +68,13 @@ async def iniciar_conexao(**context):
     await ws.send(response)
 
 
-def get_jogador(id_jogador):
-    try:
-        jogador = ONLINE_PLAYERS[id_jogador]
-        return jogador
-    except KeyError as e:
-        logger.info("O jogador procurado não existe: %s", e)
-
-
-def get_partida(id_sala):
-    try:
-        partida = PARTIDAS[id_sala]
-        return partida
-    except KeyError as e:
-        logger.error("Partida não existe. %s", e)
-
-
 @app.signal("jogador.conexao.entrar_na_sala")
 async def entrar_na_sala(**context):
 
     ws = context["websocket"]
     identifier = ws.__hash__()
 
-    id_sala = context["payload"]["id_sala"]
+    id_sala = context.get("payload").get("id_sala")
 
     jogador = get_jogador(identifier)
     partida = get_partida(id_sala)
@@ -93,11 +93,11 @@ async def entrar_na_sala(**context):
 
 @app.signal("jogador.registro.definir_nome")
 async def criar_jogador(**context):
-    ws = context["websocket"]
+    ws = context.get("websocket")
     identifier = ws.__hash__()
-    nome = context["payload"]["nome"]
+    nome = context.get("payload").get("nome")
 
-    jogador = ONLINE_PLAYERS[identifier]
+    jogador = ONLINE_PLAYERS.get(identifier)
     jogador.nome = nome
 
     response = {"contexto": "nome_atualizado"}
@@ -107,7 +107,7 @@ async def criar_jogador(**context):
 
 @app.signal("sala.registro.criar")
 async def criar_sala(**context):
-    ws = context["websocket"]
+    ws = context.get("websocket")
     identifier = ws.__hash__()
 
     jogador = ONLINE_PLAYERS[identifier]
@@ -121,7 +121,7 @@ async def criar_sala(**context):
 
 @app.signal("sala.status.iniciar")
 async def iniciar_sala(**context):
-    ws = context["websocket"]
+    ws = context.get("websocket")
     identifier = ws.__hash__()
 
     jogador = ONLINE_PLAYERS[identifier]
@@ -138,7 +138,7 @@ async def iniciar_sala(**context):
 
 @app.signal("sala.status.iniciar")
 async def distribuir_cartas(**context):
-    ws = context["websocket"]
+    ws = context.get("websocket")
     identifier = ws.__hash__()
 
     jogador = ONLINE_PLAYERS[identifier]
@@ -154,37 +154,70 @@ async def distribuir_cartas(**context):
         await jogador.websocket.send(metadata)
 
 
+@app.signal("sala.votacao.iniciar")
+async def iniciar_votacao(**context):
+    ws = context.get("websocket")
+    identifier = ws.__hash__()
+
+    jogador = ONLINE_PLAYERS.get(identifier)
+    partida = PARTIDAS.get(jogador.id_partida)
+
+    metadata = {"contexto": "iniciar_votacao"}
+
+    await partida.broadcast(metadata)
+
+
 async def handler(msg: dict, ws: Websocket):
 
-    if msg["contexto"] == "iniciar_conexao":
-        await app.dispatch("jogador.conexao.iniciar", context={"websocket": ws})
+    ctx = msg.get("contexto")
 
-    elif msg["contexto"] == "entrar_na_sala":
-        await app.dispatch(
-            "jogador.conexao.entrar_na_sala",
-            context={"websocket": ws, "payload": msg["payload"]},
-        )
+    assert ctx != None
 
-    elif msg["contexto"] == "reconetar":
-        raise NotImplementedError
+    try:
+        if ctx == "iniciar_conexao":
+            await app.dispatch("jogador.conexao.iniciar", context={"websocket": ws})
 
-    elif msg["contexto"] == "criar_jogador":
-        await app.dispatch(
-            "jogador.registro.definir_nome",
-            context={"websocket": ws, "payload": msg["payload"]},
-        )
+        elif ctx == "entrar_na_sala":
+            await app.dispatch(
+                "jogador.conexao.entrar_na_sala",
+                context={"websocket": ws, "payload": msg["payload"]},
+            )
 
-    elif msg["contexto"] == "criar_partida":
-        await app.dispatch(
-            "sala.registro.criar",
-            context={"websocket": ws},
-        )
+        elif ctx == "reconetar":
+            raise NotImplementedError
 
-    elif msg["contexto"] == "iniciar_partida":
-        await app.dispatch("sala.status.iniciar", context={"websocket": ws})
+        elif ctx == "criar_jogador":
+            await app.dispatch(
+                "jogador.registro.definir_nome",
+                context={"websocket": ws, "payload": msg["payload"]},
+            )
+
+        elif ctx == "criar_partida":
+            await app.dispatch(
+                "sala.registro.criar",
+                context={"websocket": ws},
+            )
+
+        elif ctx == "iniciar_partida":
+            await app.dispatch("sala.status.iniciar", context={"websocket": ws})
+
+        elif ctx == "iniciar_votacao":
+            await app.dispatch("sala.votacao.iniciar", context={"websocket": ws})
+
+        elif ctx == "contabilizar_voto":
+            raise NotImplementedError
+
+        elif ctx == "finalizar_votacao":
+            raise NotImplementedError
+
+        elif ctx == "finalizar_partida":
+            raise NotImplementedError
+
+    except Exception as e:
+        logger.error("Ocorreu um erro que gerou a exeption %s", e)
 
 
-@app.signal(Event.WEBSOCKET_HANDLER_AFTER)
+@app.signal(Event.WEBSOCKET_HANDLER_BEFORE)
 async def websocket_after(**context):
     for user in ONLINE_PLAYERS:
         state = await check_state(ONLINE_PLAYERS[user].websocket)
@@ -209,8 +242,8 @@ async def game(request: Request, websocket: Websocket):
             data = json.loads(data)
 
             await handler(data, websocket)
-        except ConnectionClosed:
-            print("conexão foi fechada")
+        except Exception as e:
+            logger.error("a conexão foi fechada. Exception: %s", e)
             break
 
 

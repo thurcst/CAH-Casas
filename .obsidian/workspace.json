@@ -1,0 +1,154 @@
+{
+  "main": {
+    "id": "381e35843b905cd2",
+    "type": "split",
+    "children": [
+      {
+        "id": "7f6fb2f7b9014a64",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "43dcac0eac89db1b",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1345f100ae62ac46",
+    "type": "split",
+    "children": [
+      {
+        "id": "e165efafbabcb850",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4655ce274d6fd408",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "d5ce079401f27a9c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "171fbb0b1aaec77a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "0790604d103a3c4e",
+    "type": "split",
+    "children": [
+      {
+        "id": "90740d7255e0942b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4c416539dd18daf7",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "71569a5c399a98bc",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "f879bd4e63bc21ca",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "46ab137601408ef3",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "obsidian-excalidraw-plugin:Create new drawing": false
+    }
+  },
+  "active": "4655ce274d6fd408",
+  "lastOpenFiles": [
+    "README.md",
+    "docs/excal/Iniciar jogo.md",
+    "docs/excal/User Flow.excalidraw.md",
+    "docs/excal/Lobby.md",
+    "docs/excal",
+    "Lobby.md",
+    "docs/Pasted image 20240430231212.png",
+    "docs/Pasted image 20240430231239.png",
+    "docs"
+  ]
+}

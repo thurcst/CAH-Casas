@@ -1,9 +1,9 @@
+from objects.resposta import Resposta
 from objects.jogador import Jogador
 from objects.deck import Deck
 from objects.mesa import Mesa
-from sanic.log import logger
 
-from objects.resposta import Resposta
+from sanic.log import logger
 
 import json
 import uuid
@@ -61,8 +61,6 @@ class Partida:
             for carta in jogador.cartas:
                 carta.jogador = str(jogador.id)
 
-        return
-
     def iniciar_rodada(self, id: str = None):
         if id == None:
             pergunta = self.gerar_primeira_pergunta()
@@ -84,9 +82,6 @@ class Partida:
         perguntas = self.deck.pick_perguntas()
         return perguntas
 
-    def iniciar_vocatacao(self):
-        raise NotImplementedError
-
     def finalizar_votacao(self):
 
         ranking = self.mesa.finalizar_rodada()
@@ -100,6 +95,12 @@ class Partida:
                     vencedor,
                     jogador.pontuacao,
                 )
+
+    async def broadcast(self, msg: dict):
+        msg = json.dumps(msg)
+        for jogador in self.jogadores:
+            await jogador.ws.send(msg)
+            logger.info("Mensagem '%s' enviada em broadcast.", msg)
 
     def contabilizar_voto(self, id_resposta):
         try:

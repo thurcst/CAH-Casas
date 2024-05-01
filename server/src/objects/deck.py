@@ -1,14 +1,13 @@
 from objects.pergunta import Pergunta
 from objects.resposta import Resposta
-from random import choice
-
-import logging
 
 from sanic.log import logger
+from random import choice
 
 
 class Deck:
-    """### Responsabilidades do Deck
+    """
+    ### Responsabilidades do Deck
 
     Ler as cartas da memória
 
@@ -17,7 +16,6 @@ class Deck:
     Distribuir as cartas para os jogadores
 
     Marcar cartas como ingame (Perguntas e Respostas)
-
     """
 
     def __init__(self) -> None:
@@ -57,6 +55,7 @@ class Deck:
         Returns:
             list(Resposta): Lista com as 10 respostas já marcadas como ingame
         """
+
         respostas_nao_usadas = [
             resposta for resposta in self.respostas if resposta.ingame == False
         ]
@@ -65,7 +64,7 @@ class Deck:
         if len(respostas_nao_usadas) == 0:
             raise Exception("Acabaram as cartas, porra")
 
-        respostas = [choice(respostas_nao_usadas) for i in range(k)]
+        respostas = [choice(respostas_nao_usadas) for _ in range(k)]
 
         for resposta in respostas:
             resposta.marcar_ingame()
@@ -73,12 +72,13 @@ class Deck:
         if k == 1:
             # Caso onde é a primeira carta a ser jogada
             # não passa pelo processo de seleção dos jogadores
-            self.marcar_resposta_ingame(respostas[0].id)
+            self.marcar_pergunta_ingame(respostas[0].id)
 
         return respostas
 
     def pick_perguntas(self, k: int = 3) -> list[Pergunta]:
-        """Escolhe aleatoriamente 3 perguntas da lista de perguntas ainda não escolhidas
+        """
+        Escolhe aleatoriamente 3 perguntas da lista de perguntas ainda não escolhidas
 
         Params:
             k (int): Quantidade de perguntas a serem retornadas
@@ -89,6 +89,7 @@ class Deck:
         Returns:
             list[Pergunta]: Lista com as 3 perguntas para o jogador escolher.
         """
+
         perguntas_nao_usadas = [
             pergunta for pergunta in self.perguntas if pergunta.ingame == False
         ]
@@ -98,7 +99,7 @@ class Deck:
         if len(perguntas_nao_usadas) == 0:
             raise Exception("Acabaram as cartas, porra")
 
-        perguntas = [choice(perguntas_nao_usadas) for i in range(k)]
+        perguntas = [choice(perguntas_nao_usadas) for _ in range(k)]
 
         if k == 1:
             # Caso onde é a primeira carta a ser jogada
@@ -117,6 +118,7 @@ class Deck:
             Exception: Exception de not found
         """
         pergunta = [pergunta for pergunta in self.perguntas if pergunta.id == id].pop()
+
         if not pergunta:
             raise Exception("Pergunta não existe na lista de perguntas")
         pergunta.ingame = True
